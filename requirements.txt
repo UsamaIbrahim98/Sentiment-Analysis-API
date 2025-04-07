@@ -1,0 +1,5 @@
+# Core Requirements for Sentiment Analysis API (Python 3.10.16)
+flask
+transformers
+torch
+textblob
