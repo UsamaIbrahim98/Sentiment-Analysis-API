@@ -1,27 +1,47 @@
-#%%
+
 from flask import Flask, jsonify, request
 from transformers import pipeline
-#%%
 
-#%%
+
+__version__ = "1.0.1"  
+SERVICE_NAME = "Sentiment Analysis API"
+
 app = Flask(__name__)
+classifier = pipeline("sentiment-analysis")
 
-@app.route('/analyze-sentiment', methods=['POST'])
-def analyze_sentiment():
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    """Analyze text sentiment"""
+    data = request.get_json()
+    text = data.get('text', '')
+    
+    if not text:
+        return jsonify({"error": "Text is required"}), 400
+    
+    result = classifier(text)[0]
+    return jsonify({
+        "sentiment": result['label'],
+        "confidence": float(result['score']),
+        "version": __version__
+    })
+
+@app.route('/version')
+def version():
+    """Check current version"""
+    return jsonify({
+        "service": SERVICE_NAME,
+        "version": __version__,
+        "status": "running"
+    })
+
+@app.route('/changelog')
+def changelog():
+    """Show recent changes (from CHANGELOG.md)"""
     try:
-        data = request.get_json()
-        text = data.get('text', '')
-
-        if not text:
-            return jsonify({"error": "No text provided"}), 400
-
-        # Analyze sentiment
-        classifier = pipeline("sentiment-analysis")
-        results = classifier(text)
-        sentiments = [{"label": result['label'], "score": result['score']} for result in results]
-        return jsonify(sentiments)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        with open('CHANGELOG.md', 'r') as f:
+            return f.read().replace('\n', '<br>')
+    except FileNotFoundError:
+        return "Changelog not available", 404
 
 @app.route('/', methods=['GET'])
 def home():
@@ -29,5 +49,5 @@ def home():
 
 
 if __name__ == '__main__':
+    print(f"Starting {SERVICE_NAME} v{__version__}")
     app.run(host='0.0.0.0', port=5000)
-# %%
