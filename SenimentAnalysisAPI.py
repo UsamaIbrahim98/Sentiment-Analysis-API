@@ -1,8 +1,11 @@
 #%%
 from flask import Flask, jsonify, request
-from textblob import TextBlob
-app = Flask(__name__)
+from transformers import pipeline
 #%%
+
+#%%
+app = Flask(__name__)
+
 @app.route('/analyze-sentiment', methods=['POST'])
 def analyze_sentiment():
     try:
@@ -13,25 +16,10 @@ def analyze_sentiment():
             return jsonify({"error": "No text provided"}), 400
 
         # Analyze sentiment
-        blob = TextBlob(text)
-        polarity = blob.sentiment.polarity
-        subjectivity = blob.sentiment.subjectivity
-
-        # Interpret polarity
-        if polarity > 0:
-            sentiment = "Positive"
-        elif polarity < 0:
-            sentiment = "Negative"
-        else:
-            sentiment = "Neutral"
-
-        return jsonify({
-            "text": text,
-            "polarity": polarity,
-            "subjectivity": subjectivity,
-            "sentiment": sentiment
-        })
-
+        classifier = pipeline("sentiment-analysis")
+        results = classifier(text)
+        sentiments = [{"label": result['label'], "score": result['score']} for result in results]
+        return jsonify(sentiments)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
